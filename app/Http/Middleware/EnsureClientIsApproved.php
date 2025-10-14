@@ -9,7 +9,7 @@ class EnsureClientIsApproved
 {
     public function handle($request, Closure $next)
     {
-        if (Auth::check() && Auth::user()->role === 'client' && Auth::user()->status !== 'approved') {
+        if (Auth::check() && Auth::user()->role === 'client' && Auth::user()->registration_status !== 'approved') {
             return redirect()->route('client.waiting');
         }
 

@@ -2,25 +2,36 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Notification extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
-        'user_id',
-        'title',
+        'receiver_id',
+        'sender_id',
+        'submission_id',
+        'type',
         'message',
-        'data',
         'is_read',
-        'read_at',
     ];
 
-    protected $casts = [
-        'data' => 'array',
-        'is_read' => 'boolean',
-        'read_at' => 'datetime',
-    ];
+    public function receiver()
+    {
+        return $this->belongsTo(User::class, 'receiver_id');
+    }
 
-    // Relations/placeholders (optional):
-    // public function user() {}
+    public function sender()
+    {
+        return $this->belongsTo(User::class, 'sender_id');
+    }
+
+    public function submission()
+    {
+        return $this->belongsTo(Submission::class);
+    }
+
 }
+

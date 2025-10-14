@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 
 interface VerifyEmailProps {
-    status?: string; // e.g. "verification-link-sent"
+    status?: string;
 }
 
 export default function VerifyEmail({ status }: VerifyEmailProps) {
@@ -69,17 +69,24 @@ export default function VerifyEmail({ status }: VerifyEmailProps) {
 
                     <div className="pt-6 border-t border-gray-200 flex items-center justify-between">
                         <span className="text-sm text-gray-600">
-                            أدخلت بريدًا خاطئًا؟ قم بتسجيل الخروج لتغيير البريد.
+                            أدخلت بريدًا خاطئًا؟ قم{' '}
+                            <form onSubmit={handleLogout} className="inline">
+                                <button
+                                    type="submit"
+                                    disabled={logout.processing}
+                                    className="underline font-medium text-green-600 hover:text-green-700 disabled:opacity-50 cursor-pointer transition-all duration-300"
+                                >
+                                    بتسجيل الخروج
+                                </button>
+                            </form>{' '}
+                            لتغيير البريد.
                         </span>
-                        <form onSubmit={handleLogout}>
-                            <Button
-                                type="submit"
-                                disabled={logout.processing}
-                                className="bg-green-500 hover:bg-green-600 transition-all duration-300 cursor-pointer rounded-md"
-                            >
-                                تسجيل الخروج
-                            </Button>
-                        </form>
+
+                        {logout.processing && (
+                            <div className="flex items-center justify-center">
+                                <div className="h-5 w-5 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

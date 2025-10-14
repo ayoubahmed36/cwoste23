@@ -1,16 +1,18 @@
-import { useState } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { LuBellRing } from "react-icons/lu";
-import { Link } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 
 type Notification = {
     id: number;
-    title: string;
-    message: string; // maps to "description"
-    created_at: string;
+    sender_id: number;
+    receiver_id: number;
+    submission_id: number | null;
+    type: string;
+    message: string;
     is_read: boolean;
+    created_at: string;
 };
 
 interface NotificationDropdownProps {
@@ -18,28 +20,37 @@ interface NotificationDropdownProps {
     unreadCount: number;
 }
 
-export default function NotificationDropdown({ notifications: initialNotifications, unreadCount: initialUnreadCount }: NotificationDropdownProps) {
-    const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
-    const [unreadCount, setUnreadCount] = useState<number>(initialUnreadCount);
+export default function NotificationDropdown({
+    notifications,
+    unreadCount,
+}: NotificationDropdownProps) {
 
-    const markAsRead = (id: number) => {
-        setNotifications((prev) =>
-            prev.map((notif) =>
-                notif.id === id ? { ...notif, is_read: true } : notif
-            )
-        );
-        setUnreadCount((prev) => Math.max(0, prev - 1));
-
-        // TODO: call backend route via fetch/axios to update `is_read` and `read_at`
-        // axios.post(`/notifications/${id}/mark-read`);
+    const handleNotificationClick = (notification: Notification) => {
+        // Mark as read using the backend route
+        if (!notification.is_read) {
+            router.patch(`/notifications/${notification.id}/read`, {}, {
+                preserveScroll: true,
+                preserveState: false,
+                onSuccess: () => {
+                    // Navigate after marking as read
+                    if (notification.submission_id) {
+                        router.visit(`/admin/clients/${notification.submission_id}/edit`);
+                    }
+                }
+            });
+        } else {
+            // Already read, just navigate
+            if (notification.submission_id) {
+                router.visit(`/admin/clients/${notification.submission_id}/edit`);
+            }
+        }
     };
 
     const markAllAsRead = () => {
-        setNotifications((prev) => prev.map((notif) => ({ ...notif, is_read: true })));
-        setUnreadCount(0);
-
-        // TODO: call backend route via fetch/axios
-        // axios.post(`/notifications/mark-all-read`);
+        router.patch('/notifications/read-all', {}, {
+            preserveScroll: true,
+            preserveState: false,
+        });
     };
 
     return (
@@ -58,12 +69,19 @@ export default function NotificationDropdown({ notifications: initialNotificatio
                 </Button>
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent align="start" sideOffset={5} alignOffset={-10} collisionPadding={16} className="w-84">
+            <DropdownMenuContent
+                align="start"
+                sideOffset={5}
+                alignOffset={-10}
+                collisionPadding={16}
+                className="w-84"
+            >
                 <div className="flex items-center justify-between px-4 py-2 border-b">
                     <h3 className="font-semibold text-base">الإشعارات</h3>
                     {unreadCount > 0 && (
                         <Button
                             size="sm"
+                            onClick={markAllAsRead}
                             className="text-xs px-2 py-1 h-auto font-medium bg-green-500 hover:bg-green-600 transition cursor-pointer"
                         >
                             تعليم الكل كمقروء
@@ -73,29 +91,29 @@ export default function NotificationDropdown({ notifications: initialNotificatio
 
                 <div className="max-h-96 overflow-y-auto">
                     {notifications.length === 0 ? (
-                        <div className="p-6 text-center text-muted-foreground">
-                            لا توجد إشعارات
-                        </div>
+                        <div className="p-6 text-center text-muted-foreground">لا توجد إشعارات</div>
                     ) : (
-                        notifications.map((notification) => (
-                            <Link
-                                key={notification.id}
-                                className={`flex flex-col p-3 border-b cursor-pointer transition-all duration-200 hover:bg-muted/30 ${!notification.is_read ? 'bg-blue-50 border-s-4 border-s-blue-500' : ''
+                        notifications.map((n) => (
+                            <div
+                                key={n.id}
+                                className={`flex flex-col p-3 border-b cursor-pointer transition-all duration-200 hover:bg-muted/30 ${!n.is_read ? 'bg-blue-50 border-s-4 border-s-blue-500' : ''
                                     }`}
-                                href={`/admin/clients/${notification.id}/edit`}
+                                onClick={() => handleNotificationClick(n)}
                             >
                                 <div className="flex justify-between items-start gap-1">
                                     <div className="space-y-1 flex-1">
                                         <div className="flex items-center gap-2">
-                                            {!notification.is_read && (
+                                            {!n.is_read && (
                                                 <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
                                             )}
                                             <p className="text-sm font-medium">
-                                                {notification.title}
+                                                {n.type === 'registration_submitted'
+                                                    ? 'طلب تسجيل جديد'
+                                                    : 'إشعار إداري'}
                                             </p>
                                         </div>
                                         <p className="text-xs text-muted-foreground leading-relaxed">
-                                            {notification.message}
+                                            {n.message}
                                         </p>
                                     </div>
                                 </div>
@@ -108,10 +126,10 @@ export default function NotificationDropdown({ notifications: initialNotificatio
                                         hour: '2-digit',
                                         minute: '2-digit',
                                         hour12: true,
-                                        numberingSystem: 'latn'
-                                    }).format(new Date(notification.created_at))}
+                                        numberingSystem: 'latn',
+                                    }).format(new Date(n.created_at))}
                                 </p>
-                            </Link>
+                            </div>
                         ))
                     )}
                 </div>

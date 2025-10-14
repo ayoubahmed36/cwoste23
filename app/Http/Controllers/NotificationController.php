@@ -13,7 +13,14 @@ class NotificationController extends Controller
      */
     public function index(Request $request)
     {
-        // TODO: implement
+        $notifications = Notification::where('receiver_id', auth()->id())
+            ->orderByDesc('created_at')
+            ->paginate(20);
+
+        // TODO: Create admin/notifications/index.tsx page
+        // return inertia('admin/notifications/index', [
+        //     'notifications' => $notifications
+        // ]);
     }
 
     /**
@@ -22,7 +29,12 @@ class NotificationController extends Controller
      */
     public function unread(Request $request)
     {
-        // TODO: implement
+        $notifications = Notification::where('receiver_id', auth()->id())
+            ->where('is_read', false)
+            ->orderByDesc('created_at')
+            ->get();
+
+        return response()->json($notifications);
     }
 
     /**
@@ -31,7 +43,15 @@ class NotificationController extends Controller
      */
     public function show(Notification $notification)
     {
-        // TODO: implement
+        // Authorize: user can only view their own notifications
+        if ($notification->receiver_id !== auth()->id()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        // TODO: Create admin/notifications/show.tsx page
+        // return inertia('admin/notifications/show', [
+        //     'notification' => $notification
+        // ]);
     }
 
     /**
@@ -40,7 +60,14 @@ class NotificationController extends Controller
      */
     public function markAsRead(Notification $notification, Request $request)
     {
-        // TODO: implement
+        // Authorize: user can only mark their own notifications as read
+        if ($notification->receiver_id !== auth()->id()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $notification->update(['is_read' => true]);
+
+        return back();
     }
 
     /**
@@ -49,7 +76,11 @@ class NotificationController extends Controller
      */
     public function markAllAsRead(Request $request)
     {
-        // TODO: implement
+        Notification::where('receiver_id', auth()->id())
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+
+        return back();
     }
 
     /**
@@ -58,7 +89,14 @@ class NotificationController extends Controller
      */
     public function destroy(Notification $notification)
     {
-        // TODO: implement
+        // Authorize: user can only delete their own notifications
+        if ($notification->receiver_id !== auth()->id()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $notification->delete();
+
+        return back();
     }
 
     /**
@@ -67,6 +105,8 @@ class NotificationController extends Controller
      */
     public function clear(Request $request)
     {
-        // TODO: implement
+        Notification::where('receiver_id', auth()->id())->delete();
+
+        return back();
     }
 }

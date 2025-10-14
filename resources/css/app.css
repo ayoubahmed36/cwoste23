@@ -210,4 +210,14 @@
         }
     }
 
+    /* Hide built-in password reveal button in Edge/Chrome */
+    input::-ms-reveal,
+    input::-ms-clear {
+        display: none;
+    }
+    input[type='password']::-webkit-textfield-decoration-container,
+    input[type='password']::-webkit-clear-button,
+    input[type='password']::-webkit-inner-spin-button {
+        display: none !important;
+    }
 }

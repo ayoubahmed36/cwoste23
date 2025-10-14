@@ -25,9 +25,7 @@ return new class extends Migration
             $table->enum('job_status', ['موظف', 'متقاعد'])->default('موظف');
             $table->string('job_title');
             $table->string('work_institution');
-            $table->string('postal_cheque');
-            $table->string('proof_certificate');
-            $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
+            $table->enum('registration_status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->timestamps();
         });
     }

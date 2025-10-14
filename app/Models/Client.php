@@ -19,9 +19,7 @@ class Client extends Model
         'job_status',
         'job_title',
         'work_institution',
-        'postal_cheque',
-        'proof_certificate',
-        'status',
+        'registration_status',
     ];
     
     public function user()
@@ -33,4 +31,5 @@ class Client extends Model
     {
         return $this->belongsToMany(Service::class, 'orders');
     }
+    
 }

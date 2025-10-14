@@ -32,23 +32,28 @@ type AuthedUser = {
 
 type Notification = {
     id: number;
-    title: string;
+    sender_id: number;
+    receiver_id: number;
+    submission_id: number | null;
+    type: string;
     message: string;
     is_read: boolean;
     created_at: string;
-};
+  };
 
 type PageProps = {
     auth: { user: AuthedUser };
-    notifications: Notification[];   // ✅ new
-    unreadCount: number;
+    notifications: {
+        all: Notification[];
+        unreadCount: number;
+    }
 };
-
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { props } = usePage<PageProps>();
     const user = props.auth?.user;
-    const { notifications, unreadCount } = props;
+    const notifications = props.notifications?.all || [];
+    const unreadCount = props.notifications?.unreadCount || 0;
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [smallScreen, setSmallScreen] = useState(false);

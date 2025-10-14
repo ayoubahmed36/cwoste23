@@ -28,22 +28,6 @@ Route::middleware(['auth', 'verified', 'role:client'])->group(function () {
     })->name('client.waiting');
 });
 
-// Temp fornow
-Route::prefix('clients/{client}')->group(function () {
-    Route::get('/reviews', [ClientReviewController::class, 'index'])->name('reviews.index');
-    Route::get('/reviews/latest', [ClientReviewController::class, 'latest'])->name('reviews.latest');
-    Route::post('/reviews', [ClientReviewController::class, 'store'])->name('reviews.store');
-});
-
-Route::get('/reviews/{review}', [ClientReviewController::class, 'show'])->name('reviews.show');
-
-
-// Temp routes
-Route::get('/register-tests', function () {
-    return Inertia::render('auth/register-tests');
-})->name('register-tests');
-
-
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
 require __DIR__.'/admin.php';

@@ -49,7 +49,25 @@ class HandleInertiaRequests extends Middleware
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'locale' => App::getLocale(),
-            'preview' => fn () => session('preview')
+            'preview' => fn () => session('preview'),
+            'notifications' => fn () => [
+                'all' => $this->getNotifications($request),
+                'unreadCount' => collect($this->getNotifications($request))->where('is_read', false)->count(),
+            ],
         ];
+    }
+
+    private function getNotifications(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return [];
+        }
+
+        return \App\Models\Notification::with(['sender', 'submission'])
+            ->where('receiver_id', $user->id)
+            ->orderByDesc('created_at')
+            ->take(10)
+            ->get();
     }
 }

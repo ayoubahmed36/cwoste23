@@ -13,12 +13,12 @@ return new class extends Migration
     {
         Schema::create('notifications', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete(); // recipient
-            $table->string('title');
+            $table->foreignId('receiver_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('sender_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('submission_id')->nullable()->constrained()->onDelete('cascade');  
+            $table->enum('type', ['registration_submitted', 'registration_needs_correction', 'registration_corrected', 'registration_validated', 'registration_rejected', 'service_submitted', 'service_needs_correction', 'service_corrected', 'service_validated', 'service_rejected']);
             $table->text('message');
-            $table->json('data')->nullable();     // optional payload (client_id, email, etc.)
             $table->boolean('is_read')->default(false);
-            $table->timestamp('read_at')->nullable();
             $table->timestamps();
         });
     }

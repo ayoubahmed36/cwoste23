@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\NotificationController;
 
-Route::prefix('notifications')->group(function () {
+Route::middleware('auth')->prefix('notifications')->group(function () {
     Route::get('/', [NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/unread', [NotificationController::class, 'unread'])->name('notifications.unread');
 

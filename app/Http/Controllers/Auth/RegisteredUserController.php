@@ -5,13 +5,14 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\Notification;
+use App\Models\Submission;
 use App\Models\User;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Auth\Events\Registered;
-use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class RegisteredUserController extends Controller
 {
@@ -32,33 +33,7 @@ class RegisteredUserController extends Controller
 
     public function preview(Request $request)
     {
-        $validated = $request->validate([
-            'ccp' => ['required', 'numeric', 'digits_between:1,10', 'unique:clients,ccp'],
-            'email' => ['required', 'email', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'password_confirmation' => ['required', 'same:password'],
-
-            // personalImage is optional (nullable)
-            'personalImage' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif', 'max:2048'], // max 2MB
-
-            'lastName' => ['required', 'string', 'min:2', 'max:100'],
-            'firstName' => ['required', 'string', 'min:2', 'max:100'],
-            'phone' => ['required', 'string', 'unique:clients,phone'],
-            'dateOfBirth' => ['required', 'date', 'before_or_equal:-20 years'],
-            'gender' => ['required', 'in:ذكر,انثى'],
-            'maritalStatus' => ['required', 'in:أعزب,متزوج'],
-            'nbChildren' => ['required', 'integer', 'min:0', 'max:20'],
-            'jobStatus' => ['required', 'in:موظف,متقاعد'],
-            'jobTitle' => ['required', 'string', 'min:2', 'max:150'],
-            'workInstitution' => ['required', 'string', 'min:2', 'max:150'],
-
-            // ✅ documents validation for PDFs
-            'documents' => ['required', 'array'],
-            'documents.*.id' => ['required', 'integer', 'exists:required_documents,id'],
-            'documents.*.description' => ['required', 'string', 'max:255'],
-            'documents.*.file' => ['required', 'file', 'mimes:pdf', 'max:1024'],
-
-        ], $this->errorMessages());
+        $validated = $this->validate($request);
 
         return redirect()->route('register')->with('preview', true);
 
@@ -72,35 +47,8 @@ class RegisteredUserController extends Controller
     public function store(Request $request)
     {
         // 1) Validate - personalImage is optional
-        $validated = $request->validate([
-            'ccp' => ['required', 'numeric', 'digits_between:1,10', 'unique:clients,ccp'],
-            'email' => ['required', 'email', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'password_confirmation' => ['required', 'same:password'],
+        $validated = $this->validate($request);
 
-            // personalImage is optional (nullable)
-            'personalImage' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif', 'max:2048'], // max 2MB
-
-            'lastName' => ['required', 'string', 'min:2', 'max:100'],
-            'firstName' => ['required', 'string', 'min:2', 'max:100'],
-            'phone' => ['required', 'string', 'unique:clients,phone'],
-            'dateOfBirth' => ['required', 'date', 'before_or_equal:-20 years'],
-            'gender' => ['required', 'in:ذكر,انثى'],
-            'maritalStatus' => ['required', 'in:أعزب,متزوج'],
-            'nbChildren' => ['required', 'integer', 'min:0', 'max:20'],
-            'jobStatus' => ['required', 'in:موظف,متقاعد'],
-            'jobTitle' => ['required', 'string', 'min:2', 'max:150'],
-            'workInstitution' => ['required', 'string', 'min:2', 'max:150'],
-
-            // ✅ documents validation for PDFs
-            'documents' => ['required', 'array'],
-            'documents.*.id' => ['required', 'integer', 'exists:required_documents,id'],
-            'documents.*.description' => ['required', 'string', 'max:255'],
-            'documents.*.file' => ['required', 'file', 'mimes:pdf', 'max:1024'],
-        ], $this->errorMessages());
-
-        $proofPath = null;
-        $chequePath = null;
         $imagePath = null;
 
         try {
@@ -109,14 +57,14 @@ class RegisteredUserController extends Controller
             // 2) Handle personal image upload (optional)
             if ($request->hasFile('personalImage')) {
                 $imageFile = $request->file('personalImage');
-                $imageName = 'profile_' . time() . '_' . $validated['ccp'] . '.' . $imageFile->getClientOriginalExtension();
+                $imageName = 'profile_'.time().'_'.$validated['ccp'].'.'.$imageFile->getClientOriginalExtension();
                 // Store in private disk
                 $imagePath = $imageFile->storeAs("cwoste_uploads/profiles/{$validated['ccp']}", $imageName, 'private');
             }
 
             // 3) Create user
             $userData = [
-                'name' => $validated['firstName'] . ' ' . $validated['lastName'],
+                'name' => $validated['firstName'].' '.$validated['lastName'],
                 'email' => $validated['email'],
                 'password' => $validated['password'],
                 'role' => 'client',
@@ -129,13 +77,31 @@ class RegisteredUserController extends Controller
 
             $user = User::create($userData);
 
-            // 4) Store files privately (order per your UI)
-            $proofPath = $request->file('files')[0]->store("cwoste_uploads/clients/{$user->id}/registration/certificate", 'private');
-            $chequePath = $request->file('files')[1]->store("cwoste_uploads/clients/{$user->id}/registration/cheque", 'private');
+            // Save all documents in registration_documents table
+            $uploadedFilePaths = [];
+            foreach ($validated['documents'] as $document) {
+                $file = $document['file'];
+                $originalName = $file->getClientOriginalName();
+                
+                // Store file privately
+                $filePath = $file->storeAs(
+                    "cwoste_uploads/clients/{$user->id}/registration_documents", 
+                    time() . '_' . $originalName, 
+                    'private'
+                );
+
+                $uploadedFilePaths[] = $filePath;
+                
+                // Save to registration_documents table
+                \App\Models\RegistrationDocument::create([
+                    'original_name' => $originalName,
+                    'path' => $filePath,
+                    'user_id' => $user->id,
+                    'required_documents_id' => $document['id'],
+                ]);
+            } 
 
             $validated['dateOfBirth'] = \Carbon\Carbon::parse($validated['dateOfBirth'])->toDateString();
-
-            //dd($validated);
 
             // 5) Create client
             Client::create([
@@ -151,8 +117,13 @@ class RegisteredUserController extends Controller
                 'job_status' => $validated['jobStatus'],
                 'job_title' => $validated['jobTitle'],
                 'work_institution' => $validated['workInstitution'],
-                'proof_certificate' => $proofPath,
-                'postal_cheque' => $chequePath,
+                'registration_status' => 'pending',
+            ]);
+
+            $submission = Submission::create([
+                'user_id' => $user->id,
+                'type' => 'registration',
+                'status' => 'pending',
             ]);
 
             $admin = User::where('role', 'admin')->first();
@@ -161,15 +132,12 @@ class RegisteredUserController extends Controller
 
             if ($admin) {
                 Notification::create([
-                    'user_id' => $admin->id, // المستلم = المسؤول
-                    'title' => 'تسجيل عميل جديد',
+                    'receiver_id' => $admin->id,
+                    'sender_id' => $user->id,
+                    'submission_id' => $submission->id,
+                    'type' => 'registration_submitted',
                     'message' => "{$message} {$validated['firstName']} {$validated['lastName']} بالتسجيل وهو في انتظار المراجعة والموافقة.",
-                    'data' => json_encode([
-                        'user_id' => $user->id,
-                        'client_ccp' => $validated['ccp'],
-                        'email' => $validated['email'],
-                        'status' => 'pending',
-                    ]),
+                    'is_read' => false,
                 ]);
             }
 
@@ -177,20 +145,22 @@ class RegisteredUserController extends Controller
 
             event(new Registered($user));
             Auth::login($user);
+
             return redirect()->intended(route('dashboard', absolute: false));
 
         } catch (\Throwable $e) {
             DB::rollBack();
 
-            // cleanup any saved files
-            if ($proofPath)
-                Storage::disk('private')->delete($proofPath);
-            if ($chequePath)
-                Storage::disk('private')->delete($chequePath);
-            if ($imagePath)
+            foreach ($uploadedFilePaths as $path) {
+                Storage::disk('private')->delete($path);
+            }
+
+            if ($imagePath) {
                 Storage::disk('private')->delete($imagePath);
+            }
 
             report($e);
+
             return back()
                 ->withErrors(['general' => $e->getMessage()])
                 ->withInput();
@@ -264,7 +234,7 @@ class RegisteredUserController extends Controller
             'workInstitution.min' => 'اسم المؤسسة يجب أن يحتوي على حرفين على الأقل.',
             'workInstitution.max' => 'اسم المؤسسة يجب ألا يتجاوز 150 حرفاً.',
 
-            // documents    
+            // documents
             'documents.required' => 'الوثائق مطلوبة.',
             'documents.array' => 'الوثائق يجب أن تكون في شكل مصفوفة.',
 
@@ -285,5 +255,36 @@ class RegisteredUserController extends Controller
             'documents.*.file.max' => 'يجب ألا يتجاوز حجم ملف الوثيقة 1 ميغابايت.',
 
         ];
+    }
+
+    private function validate(Request $request): array
+    {
+        return $request->validate([
+            'ccp' => ['required', 'numeric', 'digits_between:1,10', 'unique:clients,ccp'],
+            'email' => ['required', 'email', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password_confirmation' => ['required', 'same:password'],
+
+            // personalImage is optional (nullable)
+            'personalImage' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif', 'max:2048'], // max 2MB
+
+            'lastName' => ['required', 'string', 'min:2', 'max:100'],
+            'firstName' => ['required', 'string', 'min:2', 'max:100'],
+            'phone' => ['required', 'string', 'unique:clients,phone'],
+            'dateOfBirth' => ['required', 'date', 'before_or_equal:-20 years'],
+            'gender' => ['required', 'in:ذكر,انثى'],
+            'maritalStatus' => ['required', 'in:أعزب,متزوج'],
+            'nbChildren' => ['required', 'integer', 'min:0', 'max:20'],
+            'jobStatus' => ['required', 'in:موظف,متقاعد'],
+            'jobTitle' => ['required', 'string', 'min:2', 'max:150'],
+            'workInstitution' => ['required', 'string', 'min:2', 'max:150'],
+
+            // ✅ documents validation for PDFs
+            'documents' => ['required', 'array'],
+            'documents.*.id' => ['required', 'integer', 'exists:required_documents,id'],
+            'documents.*.description' => ['required', 'string', 'max:255'],
+            'documents.*.file' => ['required', 'file', 'mimes:pdf', 'max:1024'],
+
+        ], $this->errorMessages());
     }
 }
