@@ -97,7 +97,7 @@ class RegisteredUserController extends Controller
                     'original_name' => $originalName,
                     'path' => $filePath,
                     'user_id' => $user->id,
-                    'required_documents_id' => $document['id'],
+                    'required_document_registration_id' => $document['id'],
                 ]);
             } 
 

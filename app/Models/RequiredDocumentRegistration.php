@@ -4,19 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Document extends Model
+class RequiredDocumentRegistration extends Model
 {
+    protected $table = 'required_document_registration';
+    
     protected $fillable = [
-        'original_name',
-        'path',
-        'order_id',
         'required_document_id',
     ];
-
-    public function order()
-    {
-        return $this->belongsTo(Order::class);
-    }
 
     public function requiredDocument()
     {

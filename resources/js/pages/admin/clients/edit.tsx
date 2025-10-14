@@ -1,5 +1,5 @@
 import AdminAppLayout from "@/layouts/admin-app-layout";
-import { Head } from '@inertiajs/react';
+import { Head, usePage, router } from '@inertiajs/react';
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,9 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, XCircle, Clock, Pencil, Check, X, Download, User, Mail, Phone, Calendar, Briefcase, FileText } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Pencil, Check, X, Download, User, Mail, Phone, Calendar, Briefcase, FileText, AlertCircle, Save } from 'lucide-react';
+import PdfDocumentViewer from "@/components/cwoste/pdf-document-viewer";
+import DatePicker from "@/components/cwoste/date-picker";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-type FieldStatus = 'pending' | 'approved' | 'rejected';
+type FieldStatus = 'pending' | 'accepted' | 'rejected';
 
 interface FieldValidation {
     status: FieldStatus;
@@ -20,45 +23,90 @@ interface FieldValidation {
 interface ClientData {
     ccp: string;
     email: string;
-    lastName: string;
-    firstName: string;
+    last_name: string;
+    first_name: string;
     phone: string;
     gender: string;
-    dateOfBirth: string;
-    maritalStatus: string;
-    nbChildren: number;
-    jobStatus: string;
-    jobTitle: string;
+    date_of_birth: string;
+    marital_status: string;
+    nb_children: number;
+    job_status: string;
+    job_title: string;
+    work_institution: string;
+}
+
+interface Document {
+    id: number;
+    original_name: string;
+    path: string;
+    description: string;
+    created_at: string;
+}
+
+interface PageProps {
+    client: {
+        id: number;
+        user_id: number;
+        name: string;
+        email: string;
+        ccp: string;
+        first_name: string;
+        last_name: string;
+        phone: string;
+        date_of_birth: string;
+        gender: string;
+        marital_status: string;
+        nb_children: number;
+        job_status: string;
+        job_title: string;
+        work_institution: string;
+        registration_status: string;
+        image: string | null;
+    };
+    documents: Document[];
+    submission: {
+        id: number;
+        status: string;
+        created_at: string;
+    } | null;
+    validations: Record<string, FieldValidation>;
+    [key: string]: any;
 }
 
 export default function Edit() {
-    // Mock client data from registration form
+    const { props } = usePage<PageProps>();
+    const { client, documents, submission, validations } = props;
+
+    // Initialize client data state from props
     const [clientData, setClientData] = useState<ClientData>({
-        ccp: "1234567890",
-        email: "mohamed.ahmed@example.com",
-        lastName: "أحمد",
-        firstName: "محمد",
-        phone: "+213555123456",
-        gender: "ذكر",
-        dateOfBirth: "1985-05-15",
-        maritalStatus: "متزوج",
-        nbChildren: 3,
-        jobStatus: "موظف",
-        jobTitle: "أستاذ التعليم الثانوي"
+        ccp: client.ccp,
+        email: client.email,
+        last_name: client.last_name,
+        first_name: client.first_name,
+        phone: client.phone,
+        gender: client.gender,
+        date_of_birth: client.date_of_birth,
+        marital_status: client.marital_status,
+        nb_children: client.nb_children,
+        job_status: client.job_status,
+        job_title: client.job_title,
+        work_institution: client.work_institution
     });
 
+    // Initialize field validations from props or set to pending
     const [fieldValidations, setFieldValidations] = useState<Record<string, FieldValidation>>({
-        ccp: { status: 'pending', comment: '' },
-        email: { status: 'pending', comment: '' },
-        lastName: { status: 'pending', comment: '' },
-        firstName: { status: 'pending', comment: '' },
-        phone: { status: 'pending', comment: '' },
-        gender: { status: 'pending', comment: '' },
-        dateOfBirth: { status: 'pending', comment: '' },
-        maritalStatus: { status: 'pending', comment: '' },
-        nbChildren: { status: 'pending', comment: '' },
-        jobStatus: { status: 'pending', comment: '' },
-        jobTitle: { status: 'pending', comment: '' }
+        ccp: validations?.ccp || { status: 'pending', comment: '' },
+        email: validations?.email || { status: 'pending', comment: '' },
+        last_name: validations?.last_name || { status: 'pending', comment: '' },
+        first_name: validations?.first_name || { status: 'pending', comment: '' },
+        phone: validations?.phone || { status: 'pending', comment: '' },
+        gender: validations?.gender || { status: 'pending', comment: '' },
+        date_of_birth: validations?.date_of_birth || { status: 'pending', comment: '' },
+        marital_status: validations?.marital_status || { status: 'pending', comment: '' },
+        nb_children: validations?.nb_children || { status: 'pending', comment: '' },
+        job_status: validations?.job_status || { status: 'pending', comment: '' },
+        job_title: validations?.job_title || { status: 'pending', comment: '' },
+        work_institution: validations?.work_institution || { status: 'pending', comment: '' }
     });
 
     const [editingField, setEditingField] = useState<string | null>(null);
@@ -69,7 +117,7 @@ export default function Edit() {
     const approveField = (field: string) => {
         setFieldValidations(prev => ({
             ...prev,
-            [field]: { ...prev[field], status: 'approved', comment: '' }
+            [field]: { ...prev[field], status: 'accepted' as FieldStatus, comment: '' }
         }));
     };
 
@@ -97,11 +145,11 @@ export default function Edit() {
         if (editingField) {
             setClientData(prev => ({
                 ...prev,
-                [editingField]: editingField === 'nbChildren' ? parseInt(editValue) : editValue
+                [editingField]: editingField === 'nb_children' ? parseInt(editValue) : editValue
             }));
             setFieldValidations(prev => ({
                 ...prev,
-                [editingField]: { status: 'approved', comment: 'تم التعديل من قبل المسؤول' }
+                [editingField]: { status: 'accepted' as FieldStatus, comment: 'تم التعديل من قبل المسؤول' }
             }));
             setEditingField(null);
         }
@@ -109,82 +157,160 @@ export default function Edit() {
 
     const StatusBadge = ({ status }: { status: FieldStatus }) => {
         const config = {
-            pending: { color: 'bg-yellow-100 text-yellow-800', icon: Clock, text: 'قيد المراجعة' },
-            approved: { color: 'bg-green-100 text-green-800', icon: CheckCircle, text: 'مقبول' },
-            rejected: { color: 'bg-red-100 text-red-800', icon: XCircle, text: 'مرفوض' }
+            pending: { 
+                color: 'bg-amber-50 text-amber-700 border-amber-200', 
+                icon: Clock, 
+                text: 'قيد المراجعة',
+                dotColor: 'bg-amber-500'
+            },
+            accepted: { 
+                color: 'bg-emerald-50 text-emerald-700 border-emerald-200', 
+                icon: CheckCircle, 
+                text: 'مقبول',
+                dotColor: 'bg-emerald-500'
+            },
+            rejected: { 
+                color: 'bg-rose-50 text-rose-700 border-rose-200', 
+                icon: XCircle, 
+                text: 'مرفوض',
+                dotColor: 'bg-rose-500'
+            }
         };
-        const { color, icon: Icon, text } = config[status];
+        const { color, icon: Icon, text, dotColor } = config[status];
         return (
-            <Badge className={`${color} gap-1`}>
-                <Icon className="h-3 w-3" />
+            <Badge className={`${color} gap-1.5 border font-medium`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></span>
+                <Icon className="h-3.5 w-3.5" />
                 {text}
             </Badge>
         );
-    };
-
-    interface ValidationFieldProps {
+    };    interface ValidationFieldProps {
         label: string;
         field: string;
         value: string | number;
-        type?: 'text' | 'number' | 'select';
+        type?: 'text' | 'number' | 'select' | 'date';
         options?: string[];
     }
 
     const ValidationField = ({ label, field, value, type = 'text', options }: ValidationFieldProps) => {
         const validation = fieldValidations[field];
+        const isEditing = editingField === field;
 
         return (
-            <div className="flex items-center justify-between p-4 border rounded-lg bg-white">
-                <div className="flex-1">
-                    <div className="flex items-center gap-4 mb-2">
-                        <span className="font-medium min-w-[150px]">{label}</span>
-                        {editingField === field ? (
-                            <div className="flex items-center gap-2">
-                                {type === 'select' && options ? (
-                                    <Select value={editValue} onValueChange={setEditValue}>
-                                        <SelectTrigger className="w-48">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {options.map(option => (
-                                                <SelectItem key={option} value={option}>{option}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                ) : (
-                                    <Input
-                                        type={type}
-                                        value={editValue}
-                                        onChange={(e) => setEditValue(e.target.value)}
-                                        className="w-48"
-                                    />
-                                )}
-                                <Button size="sm" onClick={saveEdit}><Check className="h-4 w-4" /></Button>
-                                <Button size="sm" variant="outline" onClick={() => setEditingField(null)}>
-                                    <X className="h-4 w-4" />
-                                </Button>
+            <div className={`group relative p-5 border rounded-xl transition-all duration-200 ${validation.status === 'rejected'
+                    ? 'border-rose-200 bg-rose-50/30'
+                    : validation.status === 'accepted'
+                        ? 'border-emerald-200 bg-emerald-50/30'
+                        : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+                }`}>
+                <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 space-y-3">
+                        {/* Label and Status */}
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-semibold text-gray-700">{label}</span>
+                            <StatusBadge status={validation.status} />
+                        </div>
+
+                        {/* Value or Edit Field */}
+                        <div className="flex items-center gap-3">
+                            {isEditing ? (
+                                <div className="flex items-center gap-2 flex-1">
+                                    {type === 'select' && options ? (
+                                        <Select value={editValue} onValueChange={setEditValue}>
+                                            <SelectTrigger className="flex-1 max-w-md h-10 bg-white border-gray-300">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {options.map(option => (
+                                                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    ) : type === 'date' ? (
+                                        <DatePicker
+                                            value={new Date(editValue)}
+                                            onChange={(date) => {
+                                                if (date) {
+                                                    setEditValue(date.toISOString().split('T')[0]);
+                                                }
+                                            }}
+                                            className="flex-1 max-w-md"
+                                        />
+                                    ) : (
+                                        <Input
+                                            type={type}
+                                            value={editValue}
+                                            onChange={(e) => setEditValue(e.target.value)}
+                                            className="flex-1 max-w-md h-10 bg-white border-gray-300"
+                                            autoFocus
+                                        />
+                                    )}
+                                    <Button
+                                        size="sm"
+                                        onClick={saveEdit}
+                                        className="bg-green-600 hover:bg-green-700 h-9 px-4"
+                                    >
+                                        <Save className="h-4 w-4 ml-1.5" />
+                                        حفظ
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => setEditingField(null)}
+                                        className="h-9 px-4"
+                                    >
+                                        <X className="h-4 w-4 ml-1.5" />
+                                        إلغاء
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-3 flex-1">
+                                    <span className="text-base text-gray-900 font-medium">{value}</span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Comment/Error Message */}
+                        {validation.comment && (
+                            <div className="flex items-start gap-2 p-3 bg-rose-100 border border-rose-200 rounded-lg">
+                                <AlertCircle className="h-4 w-4 text-rose-600 mt-0.5 flex-shrink-0" />
+                                <p className="text-sm text-rose-700 leading-relaxed">{validation.comment}</p>
                             </div>
-                        ) : (
-                            <span className="text-gray-700">{value}</span>
                         )}
-                        <StatusBadge status={validation.status} />
                     </div>
 
-                    {validation.comment && (
-                        <p className="text-sm text-red-600 bg-red-50 p-2 rounded">{validation.comment}</p>
+                    {/* Action Buttons */}
+                    {!isEditing && (
+                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => startEditing(field, value)}
+                                className="h-9 w-9 p-0 hover:bg-green-50 hover:border-green-300 hover:text-green-700"
+                                title="تعديل"
+                            >
+                                <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => approveField(field)}
+                                className="h-9 w-9 p-0 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700"
+                                title="قبول"
+                            >
+                                <Check className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => rejectField(field)}
+                                className="h-9 w-9 p-0 hover:bg-rose-50 hover:border-rose-300 hover:text-rose-700"
+                                title="رفض"
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
                     )}
-                </div>
-
-                <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => startEditing(field, value)}>
-                        <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => approveField(field)}>
-                        <Check className="h-4 w-4" />
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => rejectField(field)}>
-                        <X className="h-4 w-4" />
-                    </Button>
                 </div>
             </div>
         );
@@ -194,192 +320,331 @@ export default function Edit() {
         <AdminAppLayout>
             <Head title="مراجعة طلب التسجيل" />
 
-            <div className="container mx-auto p-6 space-y-6">
-                {/* Header */}
-                <div className="flex justify-between items-center">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900">مراجعة طلب التسجيل</h1>
-                        <p className="text-gray-600">العميل: محمد أحمد</p>
-                    </div>
-                    <Badge variant="outline" className="text-lg px-4 py-2">
-                        قيد المراجعة
-                    </Badge>
-                </div>
-
-                <Tabs defaultValue="account" className="space-y-6">
-                    <TabsList className="grid w-full grid-cols-4">
-                        <TabsTrigger value="account">معلومات الحساب</TabsTrigger>
-                        <TabsTrigger value="personal">المعلومات الشخصية</TabsTrigger>
-                        <TabsTrigger value="job">المعلومات الوظيفية</TabsTrigger>
-                        <TabsTrigger value="files">الملفات</TabsTrigger>
-                    </TabsList>
-
-                    {/* Account Information */}
-                    <TabsContent value="account">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <User className="h-5 w-5" />
-                                    معلومات الحساب
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <ValidationField
-                                    label="رقم ال CCP"
-                                    field="ccp"
-                                    value={clientData.ccp}
-                                />
-                                <ValidationField
-                                    label="الايميل"
-                                    field="email"
-                                    value={clientData.email}
-                                />
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    {/* Personal Information */}
-                    <TabsContent value="personal">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <User className="h-5 w-5" />
-                                    المعلومات الشخصية
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <ValidationField
-                                    label="اللقب"
-                                    field="lastName"
-                                    value={clientData.lastName}
-                                />
-                                <ValidationField
-                                    label="الاسم"
-                                    field="firstName"
-                                    value={clientData.firstName}
-                                />
-                                <ValidationField
-                                    label="رقم الهاتف"
-                                    field="phone"
-                                    value={clientData.phone}
-                                />
-                                <ValidationField
-                                    label="الجنس"
-                                    field="gender"
-                                    value={clientData.gender}
-                                    type="select"
-                                    options={['ذكر', 'انثى']}
-                                />
-                                <ValidationField
-                                    label="تاريخ الميلاد"
-                                    field="dateOfBirth"
-                                    value={clientData.dateOfBirth}
-                                />
-                                <ValidationField
-                                    label="الحالة الاجتماعية"
-                                    field="maritalStatus"
-                                    value={clientData.maritalStatus}
-                                    type="select"
-                                    options={['أعزب', 'متزوج']}
-                                />
-                                <ValidationField
-                                    label="عدد الأطفال"
-                                    field="nbChildren"
-                                    value={clientData.nbChildren}
-                                    type="number"
-                                />
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    {/* Job Information */}
-                    <TabsContent value="job">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Briefcase className="h-5 w-5" />
-                                    المعلومات الوظيفية
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <ValidationField
-                                    label="الحالة الوظيفية"
-                                    field="jobStatus"
-                                    value={clientData.jobStatus}
-                                    type="select"
-                                    options={['موظف', 'متقاعد']}
-                                />
-                                <ValidationField
-                                    label="اسم الوظيفة"
-                                    field="jobTitle"
-                                    value={clientData.jobTitle}
-                                />
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    {/* Files */}
-                    <TabsContent value="files">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <FileText className="h-5 w-5" />
-                                    الملفات المرفوعة
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="flex items-center justify-between p-4 border rounded-lg">
-                                    <div className="flex items-center gap-3">
-                                        <FileText className="h-8 w-8 text-red-500" />
-                                        <div>
-                                            <p className="font-medium">شهادة العمل.pdf</p>
-                                            <p className="text-sm text-gray-500">2.1 MB</p>
-                                        </div>
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50">
+                <div className="container mx-auto px-4 py-8 max-w-7xl">
+                    {/* Header Section */}
+                    <div className="mb-8">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                            <div className="space-y-1">
+                                <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                                        <User className="h-5 w-5 text-white" />
                                     </div>
-                                    <div className="flex gap-2">
-                                        <Button size="sm" variant="outline">
-                                            <Download className="h-4 w-4" />
-                                        </Button>
-                                        <Button size="sm" variant="outline">
-                                            <Check className="h-4 w-4" />
-                                        </Button>
-                                        <Button size="sm" variant="outline">
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                    </div>
+                                    مراجعة طلب التسجيل
+                                </h1>
+                                <div className="flex items-center gap-2 text-gray-600 mr-12">
+                                    <User className="h-4 w-4" />
+                                    <span className="font-medium">العميل: {client.name}</span>
                                 </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-                </Tabs>
+                            </div>
+                            <Badge
+                                variant="outline"
+                                className={`text-base px-5 py-2.5 font-semibold w-fit ${
+                                    client.registration_status === 'pending' 
+                                        ? 'bg-amber-50 border-amber-300 text-amber-700'
+                                        : client.registration_status === 'approved'
+                                        ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                                        : 'bg-rose-50 border-rose-300 text-rose-700'
+                                }`}
+                            >
+                                {client.registration_status === 'pending' && <Clock className="h-4 w-4 ml-2" />}
+                                {client.registration_status === 'approved' && <CheckCircle className="h-4 w-4 ml-2" />}
+                                {client.registration_status === 'rejected' && <XCircle className="h-4 w-4 ml-2" />}
+                                {client.registration_status === 'pending' && 'قيد المراجعة'}
+                                {client.registration_status === 'approved' && 'تمت الموافقة'}
+                                {client.registration_status === 'rejected' && 'مرفوض'}
+                            </Badge>
+                        </div>
+                    </div>
 
-                {/* Comment Dialog */}
-                {commentField && (
-                    <Card className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-96">
-                        <CardHeader>
-                            <CardTitle>تعليق على الرفض</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <Textarea
-                                placeholder="أدخل سبب الرفض..."
-                                value={commentText}
-                                onChange={(e) => setCommentText(e.target.value)}
-                                className="h-24"
-                            />
-                        </CardContent>
-                        <CardContent className="flex gap-2">
-                            <Button onClick={confirmRejection} className="flex-1">تأكيد</Button>
-                            <Button variant="outline" onClick={() => setCommentField(null)} className="flex-1">
-                                إلغاء
-                            </Button>
-                        </CardContent>
-                    </Card>
-                )}
+                    {/* Tabs Section */}
+                    <Tabs defaultValue="account" className="space-y-6">
+                        <TabsList className="grid w-full grid-cols-4 bg-white p-1.5 rounded-xl shadow-sm border border-gray-200 h-auto">
+                            <TabsTrigger
+                                value="account"
+                                className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg py-3 font-semibold transition-all"
+                            >
+                                <User className="h-4 w-4 ml-2" />
+                                معلومات الحساب
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="personal"
+                                className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg py-3 font-semibold transition-all"
+                            >
+                                <Calendar className="h-4 w-4 ml-2" />
+                                المعلومات الشخصية
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="job"
+                                className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg py-3 font-semibold transition-all"
+                            >
+                                <Briefcase className="h-4 w-4 ml-2" />
+                                المعلومات الوظيفية
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="files"
+                                className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg py-3 font-semibold transition-all"
+                            >
+                                <FileText className="h-4 w-4 ml-2" />
+                                الملفات
+                            </TabsTrigger>
+                        </TabsList>
 
-                {/* Final Actions */}
-                <div className="flex gap-4 justify-end pt-6 border-t">
-                    <Button variant="outline" size="lg">رفض الطلب</Button>
-                    <Button size="lg">موافقة نهائية</Button>
+                        {/* Account Information */}
+                        <TabsContent value="account" className="space-y-0">
+                            <Card className="border-gray-200 shadow-sm">
+                                <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-gray-200">
+                                    <CardTitle className="flex items-center gap-3 text-xl">
+                                        <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                                            <Mail className="h-4 w-4 text-white" />
+                                        </div>
+                                        معلومات الحساب
+                                    </CardTitle>
+                                    <CardDescription className="text-gray-600">
+                                        قم بمراجعة والتحقق من معلومات الحساب الأساسية
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4 p-6 bg-gray-50/50">
+                                    <ValidationField
+                                        label="رقم ال CCP"
+                                        field="ccp"
+                                        value={clientData.ccp}
+                                    />
+                                    <ValidationField
+                                        label="البريد الإلكتروني"
+                                        field="email"
+                                        value={clientData.email}
+                                    />
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        {/* Personal Information */}
+                        <TabsContent value="personal" className="space-y-0">
+                            <Card className="border-gray-200 shadow-sm">
+                                <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-gray-200">
+                                    <CardTitle className="flex items-center gap-3 text-xl">
+                                        <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                                            <User className="h-4 w-4 text-white" />
+                                        </div>
+                                        المعلومات الشخصية
+                                    </CardTitle>
+                                    <CardDescription className="text-gray-600">
+                                        تفاصيل البيانات الشخصية للعميل
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4 p-6 bg-gray-50/50">
+                                    <ValidationField
+                                        label="اللقب"
+                                        field="last_name"
+                                        value={clientData.last_name}
+                                    />
+                                    <ValidationField
+                                        label="الاسم"
+                                        field="first_name"
+                                        value={clientData.first_name}
+                                    />
+                                    <ValidationField
+                                        label="رقم الهاتف"
+                                        field="phone"
+                                        value={clientData.phone}
+                                    />
+                                    <ValidationField
+                                        label="الجنس"
+                                        field="gender"
+                                        value={clientData.gender}
+                                        type="select"
+                                        options={['ذكر', 'انثى']}
+                                    />
+                                    <ValidationField
+                                        label="تاريخ الميلاد"
+                                        field="date_of_birth"
+                                        value={clientData.date_of_birth}
+                                        type="date"
+                                    />
+                                    <ValidationField
+                                        label="الحالة الاجتماعية"
+                                        field="marital_status"
+                                        value={clientData.marital_status}
+                                        type="select"
+                                        options={['أعزب', 'متزوج']}
+                                    />
+                                    <ValidationField
+                                        label="عدد الأطفال"
+                                        field="nb_children"
+                                        value={clientData.nb_children}
+                                        type="number"
+                                    />
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        {/* Job Information */}
+                        <TabsContent value="job" className="space-y-0">
+                            <Card className="border-gray-200 shadow-sm">
+                                <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-gray-200">
+                                    <CardTitle className="flex items-center gap-3 text-xl">
+                                        <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                                            <Briefcase className="h-4 w-4 text-white" />
+                                        </div>
+                                        المعلومات الوظيفية
+                                    </CardTitle>
+                                    <CardDescription className="text-gray-600">
+                                        معلومات العمل والوظيفة
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4 p-6 bg-gray-50/50">
+                                    <ValidationField
+                                        label="الحالة الوظيفية"
+                                        field="job_status"
+                                        value={clientData.job_status}
+                                        type="select"
+                                        options={['موظف', 'متقاعد']}
+                                    />
+                                    <ValidationField
+                                        label="اسم الوظيفة"
+                                        field="job_title"
+                                        value={clientData.job_title}
+                                    />
+                                    <ValidationField
+                                        label="جهة العمل"
+                                        field="work_institution"
+                                        value={clientData.work_institution}
+                                    />
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        {/* Files */}
+                        <TabsContent value="files" className="space-y-0">
+                            <Card className="border-gray-200 shadow-sm">
+                                <CardHeader className="bg-gradient-to-r from-orange-50 to-red-50 border-b border-gray-200">
+                                    <CardTitle className="flex items-center gap-3 text-xl">
+                                        <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                                            <FileText className="h-4 w-4 text-white" />
+                                        </div>
+                                        الملفات المرفقة
+                                    </CardTitle>
+                                    <CardDescription className="text-gray-600">
+                                        المستندات والوثائق المقدمة مع الطلب
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4 p-6 bg-gray-50/50">
+                                    {documents && documents.length > 0 ? (
+                                        documents.map((doc) => (
+                                            <PdfDocumentViewer
+                                                key={doc.id}
+                                                documentId={doc.id}
+                                                fileName={doc.original_name}
+                                                description={doc.description}
+                                                uploadedAt={doc.created_at}
+                                                onReplace={(file: File) => {
+                                                    const formData = new FormData();
+                                                    formData.append('file', file);
+                                                    
+                                                    router.post(`/documents/${doc.id}/replace`, formData, {
+                                                        preserveScroll: true,
+                                                        onSuccess: () => {
+                                                            // Document replaced successfully
+                                                        },
+                                                        onError: (errors) => {
+                                                            console.error('Failed to replace document:', errors);
+                                                        }
+                                                    });
+                                                }}
+                                                onApprove={() => {
+                                                    // TODO: Implement document approval
+                                                    console.log('Approve document:', doc.id);
+                                                }}
+                                                onReject={() => {
+                                                    // TODO: Implement document rejection
+                                                    console.log('Reject document:', doc.id);
+                                                }}
+                                            />
+                                        ))
+                                    ) : (
+                                        <div className="text-center py-12 text-gray-500">
+                                            <FileText className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+                                            <p>لا توجد ملفات مرفقة</p>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    </Tabs>
+
+                    {/* Comment Dialog/Modal */}
+                    <Dialog open={!!commentField} onOpenChange={(open) => !open && setCommentField(null)}>
+                        <DialogContent className="sm:max-w-lg">
+                            <DialogHeader>
+                                <DialogTitle className="flex items-center gap-3 text-xl">
+                                    <div className="w-10 h-10 bg-rose-500 rounded-lg flex items-center justify-center">
+                                        <AlertCircle className="h-5 w-5 text-white" />
+                                    </div>
+                                    إضافة ملاحظة على الرفض
+                                </DialogTitle>
+                                <DialogDescription className="text-gray-600">
+                                    يرجى توضيح سبب رفض هذا الحقل
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 pt-4">
+                                <Textarea
+                                    placeholder="مثال: البيانات المدخلة غير صحيحة، يرجى التأكد من المعلومات..."
+                                    value={commentText}
+                                    onChange={(e) => setCommentText(e.target.value)}
+                                    className="min-h-32 resize-none border-gray-300 focus:border-rose-400 focus:ring-rose-400"
+                                    autoFocus
+                                />
+                                <div className="flex gap-3">
+                                    <Button
+                                        onClick={confirmRejection}
+                                        className="flex-1 bg-rose-600 hover:bg-rose-700 h-11 text-base font-semibold"
+                                        disabled={!commentText.trim()}
+                                    >
+                                        <Check className="h-4 w-4 ml-2" />
+                                        تأكيد الرفض
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => {
+                                            setCommentField(null);
+                                            setCommentText('');
+                                        }}
+                                        className="flex-1 h-11 text-base font-semibold hover:bg-gray-100"
+                                    >
+                                        <X className="h-4 w-4 ml-2" />
+                                        إلغاء
+                                    </Button>
+                                </div>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+
+                    {/* Final Action Buttons */}
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+                            <p className="text-gray-600 text-sm">
+                                بعد المراجعة الكاملة، يمكنك اتخاذ القرار النهائي بشأن الطلب
+                            </p>
+                            <div className="flex gap-3 w-full sm:w-auto">
+                                <Button
+                                    variant="outline"
+                                    size="lg"
+                                    className="flex-1 sm:flex-none h-12 border-rose-300 text-rose-700 hover:bg-rose-50 hover:border-rose-400 font-semibold"
+                                >
+                                    <XCircle className="h-5 w-5 ml-2" />
+                                    رفض الطلب نهائياً
+                                </Button>
+                                <Button
+                                    size="lg"
+                                    className="flex-1 sm:flex-none h-12 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg shadow-green-500/30 font-semibold"
+                                >
+                                    <CheckCircle className="h-5 w-5 ml-2" />
+                                    الموافقة النهائية
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </AdminAppLayout>

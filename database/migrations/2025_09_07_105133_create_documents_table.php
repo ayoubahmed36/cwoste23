@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('original_name');
             $table->string('path');
             $table->foreignId('order_id')->constrained('orders')->cascadeOnDelete();
-            $table->foreignId('required_documents_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('required_document_id')->constrained('required_documents')->cascadeOnDelete();
             $table->timestamps();
         });
     }

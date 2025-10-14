@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ImageController;
+use App\Http\Controllers\DocumentController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Client\Auth\RegisterController;
@@ -14,6 +15,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile-image/{user}', [ImageController::class, 'profileImage'])
     ->name('profile.image')
     ->middleware(['auth', 'verified']);
+    
+    // Protected document routes
+    Route::get('/documents/{document}', [DocumentController::class, 'show'])->name('documents.show');
+    Route::post('/documents/{document}/replace', [DocumentController::class, 'replace'])->name('documents.replace');
 });
 
 Route::middleware(['auth', 'verified', 'client.approved'])->group(function () {
