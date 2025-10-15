@@ -1,9 +1,9 @@
 import { useCallback, useState, useEffect } from "react";
 import { useDropzone, FileRejection } from "react-dropzone";
 import { Button } from "@/components/ui/button";
-import { Document, Page } from "react-pdf";
 import { Download, Upload, X, Check, Loader2, Clock } from "lucide-react";
 import { Icon } from "@iconify/react";
+import PdfPreviewThumbnail from "@/components/cwoste/pdf-preview-thumbnail";
 
 interface PdfDocumentViewerProps {
 	documentId: number;
@@ -218,30 +218,7 @@ export default function PdfDocumentViewer({
 						>
 							<Icon icon="lucide:x" />
 						</button>
-						<div className="relative border-2 border-green-300 rounded-lg p-0.5 bg-white">
-							<Document
-								file={newFile}
-								loading={
-									<div className="w-16 h-20 bg-green-50 flex items-center justify-center">
-										<Loader2 className="w-5 h-5 text-green-500 animate-spin" />
-									</div>
-								}
-							>
-								<Page
-									pageNumber={1}
-									width={64}
-									renderTextLayer={false}
-									renderAnnotationLayer={false}
-								/>
-							</Document>
-						</div>
-					</div>
-					<div className="flex-1 min-w-0">
-						<h2 className="font-semibold text-green-900 truncate">{newFile.name}</h2>
-						<p className="text-sm text-green-700 mt-1">{description}</p>
-						<p className="text-xs text-green-600 mt-1">
-							{(newFile.size / 1024 / 1024).toFixed(2)} MB
-						</p>
+						<PdfPreviewThumbnail file={newFile} label={description} />
 					</div>
 				</div>
 				<div className="flex items-center gap-2 shrink-0 w-full md:w-auto">
@@ -273,25 +250,7 @@ export default function PdfDocumentViewer({
 			<input {...getInputProps()} />
 			<div className="w-full min-w-0 flex items-center gap-4">
 				<div className="relative inline-block">
-					{pdfUrl && (
-						<div className="relative border-2 border-gray-300 rounded-lg p-0.5 bg-white">
-							<Document
-								file={pdfUrl}
-								loading={
-									<div className="w-16 h-20 bg-gray-50 flex items-center justify-center">
-										<Loader2 className="w-5 h-5 text-gray-500 animate-spin" />
-									</div>
-								}
-							>
-								<Page
-									pageNumber={1}
-									width={64}
-									renderTextLayer={false}
-									renderAnnotationLayer={false}
-								/>
-							</Document>
-						</div>
-					)}
+					{pdfUrl && <PdfPreviewThumbnail file={pdfUrl} label={description} />}
 				</div>
 				<div className="flex-1 min-w-0">
 					<div className="flex items-center gap-2">
