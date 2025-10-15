@@ -158,7 +158,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     };
 
     const getHeaderClass = () => {
-        let className = "w-[calc(100%-16rem)] fixed top-0 inset-inline-start h-16 bg-white border-b border-gray-200 shadow-sm";
+        let className = "w-[calc(100%-16rem)] fixed top-0 inset-inline-start h-16 bg-white border-b border-gray-200 shadow-sm z-40";
 
         if (smallScreen) {
             className = "w-full fixed top-0 inset-inline-start h-16 bg-white border-b border-gray-200 shadow-sm";
