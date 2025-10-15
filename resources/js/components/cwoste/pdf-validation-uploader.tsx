@@ -5,7 +5,7 @@ import { Download, Upload, X, Check, Loader2, Clock } from "lucide-react";
 import { Icon } from "@iconify/react";
 import PdfPreviewThumbnail from "@/components/cwoste/pdf-preview-thumbnail";
 
-interface PdfDocumentViewerProps {
+interface PdfValidationUploaderProps {
 	documentId: number;
 	fileName: string;
 	description: string;
@@ -17,7 +17,7 @@ interface PdfDocumentViewerProps {
 	onReset?: () => void;
 }
 
-export default function PdfDocumentViewer({
+export default function PdfValidationUploader({
 	documentId,
 	fileName,
 	description,
@@ -27,7 +27,7 @@ export default function PdfDocumentViewer({
 	onApprove,
 	onReject,
 	onReset,
-}: PdfDocumentViewerProps) {
+}: PdfValidationUploaderProps) {
 	const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);

@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { Document, Page } from "react-pdf";
+import PdfViewerModal from "@/components/cwoste/pdf-viewer-modal";
 
 export default function PdfPreviewThumbnail({ file, label }: { file: File | string | null; label?: string }) {
+	const [isViewerOpen, setIsViewerOpen] = useState(false);
 	const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => { };
 
 	if (!file) {
@@ -19,9 +22,25 @@ export default function PdfPreviewThumbnail({ file, label }: { file: File | stri
 	}
 
 	const isFile = file instanceof File;
+	const fileName = isFile ? file.name : label || 'document.pdf';
 
 	return (
-		<div className="flex items-center gap-3">
+		<div 
+			className="flex items-center gap-3"
+			onClick={(e) => {
+				e.stopPropagation();
+			}}
+		>
+			{/* PDF Viewer Modal */}
+			{file && (
+				<PdfViewerModal
+					isOpen={isViewerOpen}
+					onClose={() => setIsViewerOpen(false)}
+					file={file}
+					fileName={fileName}
+				/>
+			)}
+
 			<div className="relative border-2 border-gray-300 rounded-lg p-0.5 bg-white group">
 				<Document
 					file={file}
@@ -46,8 +65,7 @@ export default function PdfPreviewThumbnail({ file, label }: { file: File | stri
 						className="px-1 py-1 bg-green-500 text-white text-[10px] font-medium rounded hover:bg-green-600 transition-colors whitespace-nowrap cursor-pointer"
 						onClick={(e) => {
 							e.stopPropagation();
-							// TODO: Implement preview modal
-							console.log('Preview file:', file);
+							setIsViewerOpen(true);
 						}}
 					>
 						عرض الملف

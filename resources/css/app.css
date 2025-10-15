@@ -157,14 +157,17 @@
     * {
         @apply border-border outline-ring/50;
     }
+
     body {
         @apply bg-background text-foreground;
     }
 
     html body[data-scroll-locked] {
         overflow: visible !important;
-        margin-right: 0px !important; /* For LTR layout */
-        margin-left: 0px !important; /* For RTL layout */
+        margin-right: 0px !important;
+        /* For LTR layout */
+        margin-left: 0px !important;
+        /* For RTL layout */
     }
 
     .dialog-content::-webkit-scrollbar {
@@ -185,9 +188,11 @@
     .CollapsibleContent {
         overflow: hidden;
     }
+
     .CollapsibleContent[data-state='open'] {
         animation: slideDown 300ms ease-out;
     }
+
     .CollapsibleContent[data-state='closed'] {
         animation: slideUp 300ms ease-out;
     }
@@ -196,6 +201,7 @@
         from {
             height: 0;
         }
+
         to {
             height: var(--radix-collapsible-content-height);
         }
@@ -205,6 +211,7 @@
         from {
             height: var(--radix-collapsible-content-height);
         }
+
         to {
             height: 0;
         }
@@ -215,9 +222,35 @@
     input::-ms-clear {
         display: none;
     }
+
     input[type='password']::-webkit-textfield-decoration-container,
     input[type='password']::-webkit-clear-button,
     input[type='password']::-webkit-inner-spin-button {
         display: none !important;
     }
+/*
+    .rpv-core__popover-body {
+        position: fixed !important;
+        z-index: 99999 !important;
+    }
+
+    .rpv-search__popover {
+        position: fixed !important;
+    }
+
+    .rpv-core__inner-container {
+        overflow: hidden !important;
+    }
+
+    .rpv-core__tooltip-body-theme-switch {
+        display: none !important;
+    }
+
+    .rpv-search__popover {
+        background: white;
+        padding: 10px !important;
+        top: 125px !important;
+        left: 10px !important;
+    }
+        */
 }

@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle, XCircle, Clock, Pencil, Check, X, Download, User, Mail, Phone, Calendar, Briefcase, FileText, AlertCircle, Save } from 'lucide-react';
-import PdfDocumentViewer from "@/components/cwoste/pdf-document-viewer";
+import PdfValidationUploader from "@/components/cwoste/pdf-validation-uploader";
 import DatePicker from "@/components/cwoste/date-picker";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -681,7 +681,7 @@ export default function Edit() {
                                 <CardContent className="flex flex-col gap-3 p-6 bg-gray-50/50">
                                     {documents && documents.length > 0 ? (
                                         documents.map((doc) => (
-                                            <PdfDocumentViewer
+                                            <PdfValidationUploader
                                                 key={doc.id}
                                                 documentId={doc.id}
                                                 fileName={doc.original_name}
